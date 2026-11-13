@@ -79,12 +79,20 @@ dsh harness
 
 把本包装进 Harness 的 `desktop` profile：`~/.dsh/profiles/desktop/node_modules/dsh-free-deepseek`，并在 profile 的 `package.json` 里登记依赖与 bundle。**重启 Harness** 后，模型选择器里会多出：
 
-| 模型 | 深度思考 |
+| 模型 | 说明 |
 |---|---|
-| `deepseek-flash`（快） | 关 |
-| `deepseek-reasoner`（深度思考） | 开 |
+| `deepseek-flash`（快） | 日常问答，默认不深度思考 |
+| `deepseek-reasoner`（深度思考） | 推理/数学/复杂代码 |
+
+两个模型**都支持档位选择**：`off / minimal / low / medium / high / max`。`off` 关掉深度思考（最快），其余档位开思考（网页版只有开/关两态，强度由它自己决定，档位只是「开」的不同写法）。
 
 插件结构对齐官方 `dsh-workbuddy-connect`：宿主侧 `apply()` 用 `ctx.llm.registerAdapter(['deepseek-web'], adapter)` 注册 provider，内部起一个 loopback shim 把 Harness 的 `reasoning_effort` 翻译成本地内核的 `thinking` 布尔值。插件还会自动托管内核进程，Harness 启动时内核没跑就拉起来。
+
+**它还会检查 `pwsh`（PowerShell 7）**：Harness 的 shell 工具直接调 `pwsh`，而 Windows 只自带 5.1。缺了就会「只能聊天不能干活」（子进程起不来，`0xC0000142`）。插件启动时自动发现并把它的目录注入 `PATH`，缺了会提示你跑：
+
+```bash
+dsh pwsh     # 用 winget 装一份 PowerShell 7
+```
 
 > 想在 Harness 的插件面板里「输入名字安装」，需要先把包发到 npm：`npm publish`（见文末）。
 

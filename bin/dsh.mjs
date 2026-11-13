@@ -414,6 +414,38 @@ function cmdSkill() {
   log('  重启对话后，在技能列表里搜 dsh-free-deepseek 即可');
 }
 
+/* ---------------------------------- pwsh -------------------------------- */
+
+/**
+ * Harness 的 shell 工具调 `pwsh`（PowerShell 7）。Windows 只自带 5.1，
+ * 缺了就会「只能聊天不能干活」（子进程起不来，0xC0000142）。
+ * 这里优先找现成的，找不到就用 winget 装一份。
+ */
+async function cmdPwsh() {
+  const { findPwsh } = await import(path.join(REPO_ROOT, 'lib', 'pwsh.js'));
+  const found = findPwsh();
+  if (found) {
+    log(`✓ 已找到 pwsh：${found}`);
+    return;
+  }
+  if (!WIN) {
+    die('非 Windows 平台请用系统包管理器安装 PowerShell 7');
+  }
+  log('· 没找到 pwsh，尝试用 winget 安装 PowerShell 7');
+  const r = spawnSync(
+    'winget',
+    ['install', '--id', 'Microsoft.PowerShell', '-e', '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity'],
+    { stdio: 'inherit', shell: false },
+  );
+  if (r.status !== 0) {
+    die('winget 安装失败。手动装：https://aka.ms/powershell-release?tag=stable');
+  }
+  const after = findPwsh();
+  if (!after) die('安装完成但找不到 pwsh，重开一个终端再执行 dsh pwsh');
+  log(`✓ 已安装：${after}`);
+  log('  重启 DeepSeek Harness 后 shell 工具即可使用');
+}
+
 /* ---------------------------------- main -------------------------------- */
 
 const [cmd, ...rest] = process.argv.slice(2);
@@ -428,6 +460,7 @@ const HELP = `dsh — DeepSeek 网页版 token 自由工具箱
   dsh model [flash|reasoner|auto]  切换默认档位
   dsh codex                注册到 Codex 本地插件市场
   dsh harness              装进 DeepSeek Harness（模型选择器里多出 DeepSeek）
+  dsh pwsh                 确保 PowerShell 7 可用（Harness 的 shell 工具依赖它）
   dsh skill                安装到 WorkBuddy 技能列表
   dsh mcp                  stdio MCP server
 `;
@@ -441,6 +474,11 @@ switch (cmd) {
     writeEnv();
     cmdCodex();
     cmdSkill();
+    try {
+      await cmdPwsh();
+    } catch (err) {
+      log(`· 跳过 pwsh 检查：${err.message}`);
+    }
     try {
       cmdHarness();
     } catch (err) {
@@ -478,6 +516,9 @@ switch (cmd) {
     break;
   case 'harness':
     cmdHarness();
+    break;
+  case 'pwsh':
+    await cmdPwsh();
     break;
   case 'skill':
     cmdSkill();
