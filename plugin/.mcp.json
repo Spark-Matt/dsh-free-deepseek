@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "dsh_free_deepseek": {
+      "command": "node",
+      "args": ["server.mjs"],
+      "cwd": ".",
+      "env": {
+        "DSH_HOME": "~/.dsh",
+        "DSH_PORT": "8787"
+      },
+      "startup_timeout_sec": 60,
+      "tool_timeout_sec": 600
+    }
+  }
+}

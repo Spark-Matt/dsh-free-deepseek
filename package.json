@@ -1,0 +1,59 @@
+{
+  "name": "dsh-free-deepseek",
+  "version": "1.0.0",
+  "description": "把 chat.deepseek.com 网页版注册成 DeepSeek Harness 的模型提供方，免 API Key 用 DeepSeek。",
+  "type": "module",
+  "license": "AGPL-3.0",
+  "author": "dsh-free-deepseek contributors",
+  "main": "lib/index.js",
+  "bin": {
+    "dsh": "bin/dsh.mjs"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "bin",
+    "plugin",
+    "skill",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "deepseek",
+    "free",
+    "openai-compatible",
+    "codex-plugin"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "install:core": "node bin/dsh.mjs install",
+    "start": "node bin/dsh.mjs up",
+    "status": "node bin/dsh.mjs status",
+    "chat": "node bin/dsh.mjs chat"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/dsh-llm-pi-ai": "*",
+    "@earendil-works/pi-ai": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-llm": { "optional": true },
+    "@deepseek-ai/dsh-llm-pi-ai": { "optional": true },
+    "@earendil-works/pi-ai": { "optional": true }
+  }
+}

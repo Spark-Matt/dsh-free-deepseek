@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "name": "dsh-free-deepseek",
+  "mcpServers": "./.mcp.json",
+  "description": "把 chat.deepseek.com 网页版变成本地 OpenAI/Anthropic 兼容 API，让 Codex 等 harness 免 API Key 直接调用 DeepSeek。",
+  "author": {
+    "name": "dsh-free-deepseek contributors"
+  },
+  "license": "AGPL-3.0"
+}
