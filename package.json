@@ -1,6 +1,7 @@
 {
   "name": "dsh-free-deepseek",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "displayName": "DSH Free DeepSeek",
   "description": "把 chat.deepseek.com 网页版注册成 DeepSeek Harness 的模型提供方，免 API Key 用 DeepSeek。",
   "type": "module",
   "license": "AGPL-3.0",
@@ -17,6 +18,7 @@
   "files": [
     "lib",
     "bin",
+    "core",
     "plugin",
     "skill",
     "cordis.patch.yml",

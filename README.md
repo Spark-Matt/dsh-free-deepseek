@@ -4,27 +4,34 @@
 
 一句话原理：登录你自己的 DeepSeek 网页账号 → 本地起一个代理 → 任何支持 OpenAI / Claude SDK 的工具把 `base_url` 指过来，就相当于用网页版额度跑 agent。
 
-内核基于开源项目 [fuckds](https://github.com/xingling66666/fuckds)（AGPLv3），本项目只做**安装、托管与 harness 接入**。
+**插件自带内核**：DeepSeek 代理的完整源码 + 五个平台（Windows / Linux / macOS，x64 与 arm64）预编译好的 PoW 求解器都打在包里。所以换一台电脑只需要两步——**装插件、填一次 token**，不用装 git、不用 clone 仓库、不用装 Go 去编二进制。
+
+内核基于开源项目 [fuckds](https://github.com/xingling66666/fuckds)（AGPLv3），本项目做的是**打包、托管与 harness 接入**。
 
 ---
 
 ## 快速开始
 
+在 DeepSeek Harness 里：**设置 → 插件 → 添加插件 → 输入 `dsh-free-deepseek` → 安装**。
+
+然后写一次登录态（唯一需要手动的一步）：
+
 ```bash
-# 1. 安装（克隆内核、装依赖、下 Chromium、写配置、注册插件）
-npx -y dsh-free-deepseek install
-#   或本地克隆后：node bin/dsh.mjs install
-
-# 2. 写入 DeepSeek 网页登录态（唯一需要手动的一步，见下）
-dsh token '<你的 userToken>'
-
-# 3. 启动并验证
-dsh up
-dsh status
-dsh chat "用一句话解释什么是 QUIC"
+npx dsh-free-deepseek token '<你的 userToken>'
 ```
 
-服务地址：`http://127.0.0.1:8787`
+重启 Harness，模型选择器里就会出现 DeepSeek Flash / DeepSeek Reasoner。
+
+插件第一次运行时会把自带内核铺到 `~/.dsh-free-deepseek/fuckds`、按当前平台挑好 PoW 求解器、生成 `.env`，并以 detached 方式把代理拉起来常驻。服务地址 `http://127.0.0.1:8787`。
+
+想用命令行直接跑整套（不走 Harness 也行）：
+
+```bash
+npx -y dsh-free-deepseek install   # 铺内核 + 写配置 + 注册 Harness 插件
+dsh token '<你的 userToken>'
+dsh up && dsh status
+dsh chat "用一句话解释什么是 QUIC"
+```
 
 ### 怎么拿 userToken
 
@@ -38,6 +45,16 @@ copy(JSON.parse(localStorage.getItem("userToken")).value)
 
 > 切小号时**不要**点网页上的「退出账号」，会吊销旧 token；应清 localStorage + cookies。多账号可以一次写多个，组成号池自动轮询：
 > `dsh token t1 t2 t3`
+
+### 换一台电脑要做什么
+
+| 步骤 | 做什么 | 是否需要手动 |
+| --- | --- | --- |
+| 1 | 装插件（Harness 面板输包名，或给本地目录路径） | 手动 |
+| 2 | 写一次 userToken | 手动（登录态是你个人的，无法预置） |
+| 3 | 铺内核、选 PoW 二进制、生成 .env、拉起代理 | **全自动** |
+
+不需要：git、Go 工具链、Chromium / playwright（除非你要用浏览器引擎而不是直连）。
 
 ---
 
@@ -184,9 +201,14 @@ export ANTHROPIC_API_KEY=any
 ```
 lib/index.js                   # DSH 宿主插件：注册 provider + 托管内核
 lib/shim.js                    # loopback shim：reasoning_effort → thinking
-lib/core.js                    # 内核进程托管与健康检查
+lib/core.js                    # 内核托管：自带内核自动铺开 + 健康检查 + 拉起进程
+lib/pwsh.js                    # 发现并注入 PowerShell 7（AppX 别名也能认）
 cordis.patch.yml               # DSH bundle 补丁（insert llm-deepseek-web）
 bin/dsh.mjs                    # 统一 CLI（安装/启停/档位/接入）
+scripts/bundle-core.mjs        # 把内核与五平台 PoW 二进制打进 core/（发布前跑）
+core/                          # 构建产物（git 忽略，npm 包内自带）
+  src/                         # DeepSeek 代理完整源码
+  bin/ds-pow-<平台>-<架构>      # 预编译 PoW 求解器，五个平台
 plugin/                        # Codex 插件（MCP server）
   .codex-plugin/plugin.json
   .mcp.json
@@ -201,11 +223,14 @@ test/smoke.mjs                 # 离线自检（桩宿主 + 假内核）
 ## 发布到 npm（让 Harness 插件面板能搜到）
 
 ```bash
+node scripts/bundle-core.mjs ../fuckds   # 先把内核与 PoW 二进制打进 core/
 npm login
 npm publish
 ```
 
 发布后，在 DeepSeek Harness 的插件面板里直接输入 `dsh-free-deepseek` 就能安装，无需本地 `dsh harness`。
+
+没有 npm 账号时，面板的「添加插件」也支持**本地目录路径**，填 `~/.dsh-free-deepseek/pkg` 效果一样。
 
 ---
 
