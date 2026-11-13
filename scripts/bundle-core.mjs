@@ -52,6 +52,29 @@ function goBinary() {
   return null;
 }
 
+/**
+ * 校验产物真的是可执行文件。
+ *
+ * `go build` 的包目标写错（例如把 main 包 `./cmd/powd` 写成 `.`）时，
+ * Go 不会报错，而是安静地产出一个 ar 归档（magic `!<arch>`）。
+ * 这种文件运行时只会得到 `spawn UNKNOWN`，极难从现象倒推，所以在打包阶段就拦掉。
+ */
+function assertExecutable(file, platform) {
+  const head = fs.readFileSync(file).subarray(0, 4);
+  const ok =
+    platform === 'win32'
+      ? head[0] === 0x4d && head[1] === 0x5a // MZ
+      : platform === 'linux'
+        ? head[0] === 0x7f && head.toString('latin1', 1, 4) === 'ELF'
+        : head[0] === 0xfe && head[1] === 0xed; // Mach-O 64 位（小端/大端都覆盖）
+  if (!ok) {
+    throw new Error(
+      `${path.basename(file)} 不是可执行文件（头部 ${head.toString('hex')}）。` +
+        '通常是把 go build 的包目标写错了 —— main 包在 ./cmd/powd，不是仓库根目录。',
+    );
+  }
+}
+
 const core = findCore();
 console.log(`内核目录：${core}`);
 
@@ -73,10 +96,14 @@ if (go) {
     const file = path.join(OUT, 'bin', `ds-pow-${platform}-${arch}${ext}`);
     execFileSync(
       go,
-      ['build', '-trimpath', '-ldflags=-s -w', '-o', file, '.'],
+      // 注意：main 包在 ./cmd/powd，不是仓库根目录。
+      // 用 `.` 编译会得到 ar 归档（magic `!<arch>`）而不是可执行文件，
+      // 运行时表现为 `spawn UNKNOWN`。
+      ['build', '-trimpath', '-ldflags=-s -w', '-o', file, './cmd/powd'],
       { cwd: core, env: { ...process.env, CGO_ENABLED: '0', GOOS: goos, GOARCH: goarch }, stdio: 'inherit' },
     );
     fs.chmodSync(file, 0o755);
+    assertExecutable(file, platform);
     console.log(`✓ ds-pow-${platform}-${arch} (${(fs.statSync(file).size / 1024).toFixed(0)} KB)`);
   }
 } else {
